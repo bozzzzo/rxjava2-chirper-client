@@ -60,7 +60,7 @@ public final class WsClient {
     public static void main(String[] args) throws Exception{
 
         Gson gson = new Gson();
- 
+
 	HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
     	OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(logging)
@@ -69,19 +69,26 @@ public final class WsClient {
         //logging.setLevel(Level.BODY);
 
     	AutoManagedWebSocket rxsocket = new AutoManagedWebSocket(
-			 new Request.Builder().url("ws://localhost:9000/api/activity/Fred/live").build(),
+			 new Request.Builder().url("ws://localhost:9000/api/echo?message=rx-client-bozzo-was-here-").build(),
 			 client); 
 
-        Flowable<Chirp> chirps = rxsocket.observe() 
+        Flowable<String> chirps = rxsocket.observe()
            .doOnNext( e -> { if ( e instanceof WebSocketEvent.OpenedEvent ) { System.out.println("Connected."); } } )
            .filter( e -> e instanceof WebSocketEvent.StringMessageEvent )
            .map( e -> (WebSocketEvent.StringMessageEvent)e )
-           .map( e -> e.getText() )
-           .map( e -> gson.fromJson(e, Chirp.class) )
-           //remove historic messages.
-           .filter( WsClient::chirpIsRecent );
+           .map( e -> e.getText() );
 
-        chirps.subscribe(e -> { System.out.println( e.getUserId() + "::" + e.getMessage() ); } ); 
-        
+        final Random random = new Random();
+        chirps.subscribe(e -> {
+            System.out.println( e );
+            Thread.sleep(900);
+
+            /* experiment with manual window
+            if (e.endsWith(",0)")) {
+                Thread.sleep(1000);
+                rxsocket.send(Integer.toString(random.nextInt(10000)+1));
+            }
+            */
+        } );
     }
 }
